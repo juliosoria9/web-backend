@@ -1,5 +1,6 @@
 // src/controllers/user.controller.js
 import User from '../models/User.js'
+import Company from '../models/Company.js'
 import AppError from '../utils/AppError.js'
 import { tokenSign, tokenSignRefresh } from '../utils/handleJwt.js'
 import { encrypt, compare } from '../utils/handlePassword.js'
@@ -109,6 +110,68 @@ export const login = async (req, res, next) => {
       accessToken,
       refreshToken
     })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// PUT /api/user/register
+export const updatePersonalData = async (req, res, next) => {
+  try {
+    const { name, lastName, nif } = req.body
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, lastName, nif },
+      { new: true, runValidators: true }
+    )
+
+    res.json({ user })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// PATCH /api/user/company
+export const updateCompany = async (req, res, next) => {
+  try {
+    let { name, cif, address, isFreelance } = req.body
+    const userId = req.user._id
+
+    if (req.user.company) {
+      return next(AppError.conflict('Ya tienes una compañía asociada'))
+    }
+
+    if (isFreelance) {
+      const currentUser = await User.findById(userId)
+      if (!currentUser.nif || !currentUser.name) {
+        return next(AppError.badRequest('Completa tus datos personales antes de configurar empresa como autónomo'))
+      }
+      name = `${currentUser.name || ''} ${currentUser.lastName || ''}`.trim()
+      cif = currentUser.nif
+      address = currentUser.address
+    }
+
+    let company = await Company.findOne({ cif, deleted: false })
+
+    if (!company) {
+      company = await Company.create({
+        owner: userId,
+        name,
+        cif,
+        address,
+        isFreelance: isFreelance || false
+      })
+      await User.findByIdAndUpdate(userId, { company: company._id })
+    } else {
+      await User.findByIdAndUpdate(userId, {
+        company: company._id,
+        role: 'guest'
+      })
+    }
+
+    const user = await User.findById(userId).populate('company')
+    res.json({ user })
   } catch (error) {
     next(error)
   }
