@@ -8,7 +8,10 @@ import {
   validateEmail,
   login,
   updatePersonalData,
-  updateCompany
+  updateCompany,
+  uploadLogo,
+  getUser,
+  deleteUser
 } from '../controllers/user.controller.js'
 import {
   registerSchema,
@@ -28,5 +31,8 @@ router.post('/login', validate(loginSchema), login)
 router.put('/validation', auth, validate(validationSchema), validateEmail)
 router.put('/register', auth, validate(personalDataSchema), updatePersonalData)
 router.patch('/company', auth, validate(companySchema), updateCompany)
+router.patch('/logo', auth, upload.single('logo'), uploadLogo)
+router.get('/', auth, getUser)
+router.delete('/', auth, deleteUser)
 
 export default router

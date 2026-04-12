@@ -176,3 +176,45 @@ export const updateCompany = async (req, res, next) => {
     next(error)
   }
 }
+
+// PATCH /api/user/logo
+export const uploadLogo = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return next(AppError.badRequest('No se proporcionó ninguna imagen'))
+    }
+
+    const user = await User.findById(req.user._id)
+    if (!user.company) {
+      return next(AppError.badRequest('El usuario no tiene una compañía asociada'))
+    }
+
+    const logoUrl = `/uploads/${req.file.filename}`
+    await Company.findByIdAndUpdate(user.company, { logo: logoUrl })
+
+    res.json({ message: 'Logo actualizado correctamente', logo: logoUrl })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// GET /api/user
+export const getUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).populate('company')
+    res.json({ user })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// DELETE /api/user
+export const deleteUser = async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, { deleted: true })
+    notificationService.emit('user:deleted', { email: req.user.email })
+    res.json({ message: 'Usuario eliminado correctamente' })
+  } catch (error) {
+    next(error)
+  }
+}
