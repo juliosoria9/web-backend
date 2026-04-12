@@ -25,3 +25,11 @@ export const verifyToken = (token) => {
     return null
   }
 }
+
+export const verifyRefreshToken = (token) => {
+  try {
+    return jwt.verify(token, config.jwt.refreshSecret)
+  } catch {
+    return null
+  }
+}

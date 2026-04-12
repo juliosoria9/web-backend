@@ -1,8 +1,9 @@
 // src/controllers/user.controller.js
+import { randomBytes } from 'crypto'
 import User from '../models/User.js'
 import Company from '../models/Company.js'
 import AppError from '../utils/AppError.js'
-import { tokenSign, tokenSignRefresh } from '../utils/handleJwt.js'
+import { tokenSign, tokenSignRefresh, verifyRefreshToken } from '../utils/handleJwt.js'
 import { encrypt, compare } from '../utils/handlePassword.js'
 import notificationService from '../services/notification.service.js'
 
@@ -162,7 +163,7 @@ export const updateCompany = async (req, res, next) => {
         address,
         isFreelance: isFreelance || false
       })
-      await User.findByIdAndUpdate(userId, { company: company._id })
+      await User.findByIdAndUpdate(userId, { company: company._id, role: 'admin' })
     } else {
       await User.findByIdAndUpdate(userId, {
         company: company._id,
@@ -211,9 +212,101 @@ export const getUser = async (req, res, next) => {
 // DELETE /api/user
 export const deleteUser = async (req, res, next) => {
   try {
-    await User.findByIdAndUpdate(req.user._id, { deleted: true })
+    const isSoft = req.query.soft === 'true'
+    if (isSoft) {
+      await User.findByIdAndUpdate(req.user._id, { deleted: true })
+    } else {
+      await User.findByIdAndDelete(req.user._id)
+    }
     notificationService.emit('user:deleted', { email: req.user.email })
     res.json({ message: 'Usuario eliminado correctamente' })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// POST /api/user/refresh
+export const refresh = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body
+    const decoded = verifyRefreshToken(refreshToken)
+    if (!decoded?._id) {
+      return next(AppError.unauthorized('Refresh token inválido o expirado'))
+    }
+    const user = await User.findById(decoded._id)
+    if (!user || user.deleted) {
+      return next(AppError.unauthorized('Usuario no encontrado'))
+    }
+    const accessToken = tokenSign(user)
+    res.json({ accessToken })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// POST /api/user/logout
+export const logout = async (req, res, next) => {
+  try {
+    res.json({ message: 'Sesión cerrada correctamente' })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// POST /api/user/invite
+export const inviteUser = async (req, res, next) => {
+  try {
+    const { email, password } = req.body
+    const adminUser = req.user
+
+    if (!adminUser.company) {
+      return next(AppError.badRequest('Debes tener una empresa para invitar usuarios'))
+    }
+
+    const existing = await User.findOne({ email, deleted: false })
+    if (existing) {
+      return next(AppError.conflict('El email ya está registrado'))
+    }
+
+    const generatedPassword = password ?? randomBytes(8).toString('hex')
+    const hashedPassword = await encrypt(generatedPassword)
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
+
+    const newUser = await User.create({
+      email,
+      password: hashedPassword,
+      role: 'guest',
+      company: adminUser.company,
+      verificationCode,
+      verificationAttempts: 3
+    })
+
+    notificationService.emit('user:invited', { email: newUser.email })
+
+    res.status(201).json({
+      user: { email: newUser.email, role: newUser.role, company: newUser.company },
+      ...(!password && { temporaryPassword: generatedPassword })
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// PUT /api/user/password
+export const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+
+    const user = await User.findById(req.user._id).select('+password')
+    const isMatch = await compare(currentPassword, user.password)
+    if (!isMatch) {
+      return next(AppError.unauthorized('La contraseña actual es incorrecta'))
+    }
+
+    user.password = await encrypt(newPassword)
+    await user.save()
+
+    res.json({ message: 'Contraseña actualizada correctamente' })
   } catch (error) {
     next(error)
   }

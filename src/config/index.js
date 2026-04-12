@@ -8,7 +8,7 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+    refreshSecret: process.env.JWT_REFRESH_SECRET,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   }
 }
@@ -20,6 +20,11 @@ if (!config.dbUri) {
 
 if (!config.jwt.secret) {
   console.error('JWT_SECRET no está definida en las variables de entorno')
+  process.exit(1)
+}
+
+if (!config.jwt.refreshSecret) {
+  console.error('JWT_REFRESH_SECRET no está definida en las variables de entorno')
   process.exit(1)
 }
 

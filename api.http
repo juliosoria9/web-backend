@@ -75,14 +75,83 @@ Authorization: Bearer {{token}}
 }
 
 ### ─────────────────────────────────────
-### 6. Obtener usuario con populate
+### 6. Subir logo de empresa
+### ─────────────────────────────────────
+PATCH {{apiUrl}}/logo
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="logo"; filename="logo.png"
+Content-Type: image/png
+
+< ./logo.png
+--boundary--
+
+### ─────────────────────────────────────
+### 7. Obtener usuario con populate
 ### ─────────────────────────────────────
 GET {{apiUrl}}/
 Authorization: Bearer {{token}}
 
 ### ─────────────────────────────────────
-### 7. Error — validación (contraseña corta)
+### 8. Gestión de sesión — refresh token
+### Pegar el refreshToken de la respuesta del login:
 ### ─────────────────────────────────────
+@refreshToken = PEGAR_REFRESH_TOKEN_AQUI
+
+POST {{apiUrl}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### ─────────────────────────────────────
+### 8b. Gestión de sesión — logout
+### ─────────────────────────────────────
+POST {{apiUrl}}/logout
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────
+### 9. Eliminar cuenta (hard delete)
+### ─────────────────────────────────────
+DELETE {{apiUrl}}/
+Authorization: Bearer {{token}}
+
+### 9b. Eliminar cuenta (soft delete)
+DELETE {{apiUrl}}/?soft=true
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────
+### 10. Invitar colega (solo admin)
+### ─────────────────────────────────────
+POST {{apiUrl}}/invite
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "colega@example.com",
+  "password": "password123"
+}
+
+### ─────────────────────────────────────
+### BONUS — Cambiar contraseña
+### ─────────────────────────────────────
+PUT {{apiUrl}}/password
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "currentPassword": "password123",
+  "newPassword": "nuevaPassword456"
+}
+
+### ─────────────────────────────────────
+### Errores esperados
+### ─────────────────────────────────────
+
+### Error — validación (contraseña corta)
 POST {{apiUrl}}/register
 Content-Type: application/json
 
@@ -91,13 +160,28 @@ Content-Type: application/json
   "password": "short"
 }
 
-### ─────────────────────────────────────
-### 8. Error — email duplicado y verificado
-### ─────────────────────────────────────
+### Error — email duplicado y verificado
 POST {{apiUrl}}/register
 Content-Type: application/json
 
 {
   "email": "test@example.com",
   "password": "password123"
+}
+
+### Error — invitar sin ser admin (403)
+POST {{apiUrl}}/invite
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "otro@example.com"
+}
+
+### Error — refresh token inválido (401)
+POST {{apiUrl}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "token_invalido"
 }

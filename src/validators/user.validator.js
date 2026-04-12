@@ -64,3 +64,18 @@ export const passwordSchema = z.object({
     path: ['newPassword']
   })
 })
+
+// POST /api/user/refresh
+export const refreshSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1, 'El refreshToken es requerido')
+  })
+})
+
+// POST /api/user/invite
+export const inviteSchema = z.object({
+  body: z.object({
+    email: z.string().email('Email inválido').transform(v => v.toLowerCase().trim()),
+    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').optional()
+  })
+})
