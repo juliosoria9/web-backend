@@ -1,0 +1,103 @@
+@baseUrl = http://localhost:3000
+@apiUrl = {{baseUrl}}/api/user
+
+### Health check
+GET {{baseUrl}}/health
+
+### ─────────────────────────────────────
+### 1. Registro de usuario
+### ─────────────────────────────────────
+POST {{apiUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### ─────────────────────────────────────
+### 2. Validar email
+### Obtén el código de MongoDB Atlas → colección users → campo verificationCode
+### ─────────────────────────────────────
+PUT {{apiUrl}}/validation
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "code": "123456"
+}
+
+### ─────────────────────────────────────
+### 3. Login
+### ─────────────────────────────────────
+POST {{apiUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Pegar el accessToken de la respuesta aquí:
+@token = PEGAR_ACCESS_TOKEN_AQUI
+
+### ─────────────────────────────────────
+### 4. Onboarding — datos personales
+### ─────────────────────────────────────
+PUT {{apiUrl}}/register
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Juan",
+  "lastName": "García",
+  "nif": "12345678A"
+}
+
+### ─────────────────────────────────────
+### 5. Onboarding — empresa (nueva, como admin)
+### ─────────────────────────────────────
+PATCH {{apiUrl}}/company
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Mi Empresa SL",
+  "cif": "B12345678",
+  "address": {
+    "street": "Calle Mayor",
+    "number": "1",
+    "postal": "28001",
+    "city": "Madrid",
+    "province": "Madrid"
+  },
+  "isFreelance": false
+}
+
+### ─────────────────────────────────────
+### 6. Obtener usuario con populate
+### ─────────────────────────────────────
+GET {{apiUrl}}/
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────
+### 7. Error — validación (contraseña corta)
+### ─────────────────────────────────────
+POST {{apiUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "bad@example.com",
+  "password": "short"
+}
+
+### ─────────────────────────────────────
+### 8. Error — email duplicado y verificado
+### ─────────────────────────────────────
+POST {{apiUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
