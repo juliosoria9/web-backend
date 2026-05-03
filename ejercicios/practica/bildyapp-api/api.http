@@ -1,0 +1,343 @@
+@baseUrl = http://localhost:3000
+@apiUrl = {{baseUrl}}/api
+
+### Health check (incluye estado de MongoDB)
+GET {{baseUrl}}/health
+
+### Documentación interactiva Swagger
+### Abre en el navegador: http://localhost:3000/api-docs
+
+
+### ═══════════════════════════════════════════════
+###  USUARIOS (práctica intermedia)
+### ═══════════════════════════════════════════════
+
+### 1. Registro de usuario
+POST {{apiUrl}}/user/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### ─────────────────────────────────────────────
+### 2. Validar email
+### Obtén el código de MongoDB Atlas → colección users → campo verificationCode
+### ─────────────────────────────────────────────
+PUT {{apiUrl}}/user/validation
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "code": "123456"
+}
+
+### ─────────────────────────────────────────────
+### 3. Login → copia el accessToken y pégalo abajo
+### ─────────────────────────────────────────────
+POST {{apiUrl}}/user/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Pega aquí el token del login:
+@token = PEGAR_ACCESS_TOKEN_AQUI
+
+### ─────────────────────────────────────────────
+### 4. Onboarding — datos personales
+### ─────────────────────────────────────────────
+PUT {{apiUrl}}/user/register
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Juan",
+  "lastName": "García",
+  "nif": "12345678A"
+}
+
+### ─────────────────────────────────────────────
+### 5. Onboarding — crear empresa
+### ─────────────────────────────────────────────
+PATCH {{apiUrl}}/user/company
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Mi Empresa SL",
+  "cif": "B12345678",
+  "address": {
+    "street": "Calle Mayor",
+    "number": "1",
+    "postal": "28001",
+    "city": "Madrid",
+    "province": "Madrid"
+  }
+}
+
+### ─────────────────────────────────────────────
+### 6. Obtener datos del usuario autenticado
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/user
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 7. Eliminar cuenta (soft delete)
+### ─────────────────────────────────────────────
+DELETE {{apiUrl}}/user?soft=true
+Authorization: Bearer {{token}}
+
+
+### ═══════════════════════════════════════════════
+###  CLIENTES
+### ═══════════════════════════════════════════════
+
+### 8. Crear un cliente
+POST {{apiUrl}}/client
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Constructora López SL",
+  "cif": "A87654321",
+  "email": "info@lopez.es",
+  "phone": "912345678",
+  "address": {
+    "street": "Avenida de la Industria",
+    "number": "42",
+    "postal": "28080",
+    "city": "Madrid",
+    "province": "Madrid"
+  }
+}
+
+### Pega aquí el _id del cliente creado:
+@clientId = PEGAR_CLIENT_ID_AQUI
+
+### ─────────────────────────────────────────────
+### 9. Listar clientes (con paginación y filtro)
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/client?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Filtrar por nombre:
+GET {{apiUrl}}/client?name=López
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 10. Obtener un cliente por ID
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/client/{{clientId}}
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 11. Actualizar cliente
+### ─────────────────────────────────────────────
+PUT {{apiUrl}}/client/{{clientId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "phone": "666777888"
+}
+
+### ─────────────────────────────────────────────
+### 12. Archivar cliente (soft delete)
+### ─────────────────────────────────────────────
+DELETE {{apiUrl}}/client/{{clientId}}?soft=true
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 13. Ver clientes archivados
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/client/archived
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 14. Restaurar cliente archivado
+### ─────────────────────────────────────────────
+PATCH {{apiUrl}}/client/{{clientId}}/restore
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 15. Borrar cliente definitivamente (hard delete)
+### ─────────────────────────────────────────────
+DELETE {{apiUrl}}/client/{{clientId}}
+Authorization: Bearer {{token}}
+
+
+### ═══════════════════════════════════════════════
+###  PROYECTOS
+### ═══════════════════════════════════════════════
+
+### 16. Crear un proyecto
+POST {{apiUrl}}/project
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Reforma Oficina Central",
+  "projectCode": "PRJ-001",
+  "client": "{{clientId}}",
+  "email": "obra@lopez.es",
+  "notes": "Incluye pintura y electricidad",
+  "address": {
+    "street": "Calle Gran Vía",
+    "number": "10",
+    "postal": "28013",
+    "city": "Madrid",
+    "province": "Madrid"
+  }
+}
+
+### Pega aquí el _id del proyecto:
+@projectId = PEGAR_PROJECT_ID_AQUI
+
+### ─────────────────────────────────────────────
+### 17. Listar proyectos
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/project?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Filtrar por cliente:
+GET {{apiUrl}}/project?client={{clientId}}&active=true
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 18. Obtener un proyecto por ID
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/project/{{projectId}}
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 19. Actualizar proyecto
+### ─────────────────────────────────────────────
+PUT {{apiUrl}}/project/{{projectId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "notes": "Incluye también fontanería"
+}
+
+### ─────────────────────────────────────────────
+### 20. Archivar proyecto
+### ─────────────────────────────────────────────
+DELETE {{apiUrl}}/project/{{projectId}}?soft=true
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 21. Ver proyectos archivados
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/project/archived
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 22. Restaurar proyecto
+### ─────────────────────────────────────────────
+PATCH {{apiUrl}}/project/{{projectId}}/restore
+Authorization: Bearer {{token}}
+
+
+### ═══════════════════════════════════════════════
+###  ALBARANES
+### ═══════════════════════════════════════════════
+
+### 23. Crear albarán de horas
+POST {{apiUrl}}/deliverynote
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "project": "{{projectId}}",
+  "client": "{{clientId}}",
+  "format": "hours",
+  "description": "Instalación eléctrica planta baja",
+  "workDate": "2026-05-05",
+  "hours": 8,
+  "workers": [
+    { "name": "Pedro Martínez", "hours": 4 },
+    { "name": "Ana Ruiz", "hours": 4 }
+  ]
+}
+
+### ─────────────────────────────────────────────
+### 24. Crear albarán de materiales
+### ─────────────────────────────────────────────
+POST {{apiUrl}}/deliverynote
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "project": "{{projectId}}",
+  "client": "{{clientId}}",
+  "format": "material",
+  "description": "Entrega de cable eléctrico",
+  "workDate": "2026-05-05",
+  "material": "Cable 2.5mm",
+  "quantity": 100,
+  "unit": "metros"
+}
+
+### Pega aquí el _id del albarán:
+@noteId = PEGAR_NOTE_ID_AQUI
+
+### ─────────────────────────────────────────────
+### 25. Listar albaranes (con filtros)
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/deliverynote?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Filtrar por proyecto y formato:
+GET {{apiUrl}}/deliverynote?project={{projectId}}&format=hours
+Authorization: Bearer {{token}}
+
+### Filtrar por rango de fechas:
+GET {{apiUrl}}/deliverynote?from=2026-01-01&to=2026-12-31
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 26. Obtener albarán por ID (con populate completo)
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/deliverynote/{{noteId}}
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 27. Descargar albarán en PDF
+### ─────────────────────────────────────────────
+GET {{apiUrl}}/deliverynote/pdf/{{noteId}}
+Authorization: Bearer {{token}}
+
+### ─────────────────────────────────────────────
+### 28. Firmar albarán con imagen de firma
+### Requiere una imagen en el body (multipart/form-data)
+### ─────────────────────────────────────────────
+PATCH {{apiUrl}}/deliverynote/{{noteId}}/sign
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="signature"; filename="firma.png"
+Content-Type: image/png
+
+< ./firma.png
+--boundary--
+
+### ─────────────────────────────────────────────
+### 29. Borrar albarán (solo si no está firmado)
+### ─────────────────────────────────────────────
+DELETE {{apiUrl}}/deliverynote/{{noteId}}
+Authorization: Bearer {{token}}
+
+
+### ═══════════════════════════════════════════════
+###  DASHBOARD (bono — aggregation pipeline)
+### ═══════════════════════════════════════════════
+
+### 30. Estadísticas de la compañía
+GET {{apiUrl}}/dashboard
+Authorization: Bearer {{token}}
