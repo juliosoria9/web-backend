@@ -6,8 +6,13 @@ import { verifyToken } from '../utils/handleJwt.js'
 import User from '../models/User.js'
 
 // Verifica el JWT y carga el usuario completo antes de permitir la conexión.
-// Los joins a las rooms (company:<id>, user:<id>) se hacen en el handler
-// `connection` de src/index.js: el middleware sólo controla la admisión.
+// El join a `user:<id>` se hace aquí (defensivo, antes del `connection` event)
+// y también en src/index.js (canónico, junto al resto de joins). Joinear desde
+// el middleware cierra la ventana de race entre handshake completado y el
+// handler `connection`: si una request HTTP emite a `user:<id>` justo entre
+// ambos puntos, el socket ya está en la room. El de `company:<id>` se queda
+// sólo en index.js por consistencia con el patrón del repo. Socket.IO deduplica
+// memberships, así que el doble join es idempotente.
 export const socketAuth = async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token
@@ -32,6 +37,12 @@ export const socketAuth = async (socket, next) => {
 
     // Guardamos el usuario en el socket para usarlo en los eventos
     socket.user = user
+
+    // Join defensivo a la sala personal: cierra la race window entre la
+    // finalización del middleware y el evento `connection`. El join canónico
+    // se repite en src/index.js; Socket.IO ignora el duplicado.
+    socket.join(`user:${user._id}`)
+
     next()
   } catch (error) {
     next(new Error('Error de autenticación en socket'))
