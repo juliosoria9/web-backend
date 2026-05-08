@@ -280,6 +280,16 @@ export const signDeliveryNote = async (req, res, next) => {
     const io = req.app.locals.io
     if (io) {
       io.to(companyRoom).emit('deliverynote:signed', deliveryNote)
+
+      // Confirmación dirigida sólo al usuario firmante en su sala personal.
+      // Payload mínimo: el cliente sabe qué albarán pasó a estado firmado y
+      // tiene los datos justos para refrescar la UI sin volver a pedir el documento.
+      const userRoom = `user:${req.user._id}`
+      io.to(userRoom).emit('deliverynote:signed:ack', {
+        deliveryNoteId: deliveryNote._id,
+        signedAt: deliveryNote.signedAt,
+        signatureUrl: deliveryNote.signatureUrl
+      })
     }
 
     res.json({ deliveryNote })
