@@ -5,7 +5,9 @@
 import { verifyToken } from '../utils/handleJwt.js'
 import User from '../models/User.js'
 
-// Verifica el JWT y carga el usuario completo antes de permitir la conexión
+// Verifica el JWT y carga el usuario completo antes de permitir la conexión.
+// Los joins a las rooms (company:<id>, user:<id>) se hacen en el handler
+// `connection` de src/index.js: el middleware sólo controla la admisión.
 export const socketAuth = async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token

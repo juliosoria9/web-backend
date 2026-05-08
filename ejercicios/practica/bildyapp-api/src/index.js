@@ -40,6 +40,14 @@ io.on('connection', (socket) => {
     console.log(`[Socket.IO] ${socket.user.email} se unió a la room ${roomName}`)
   }
 
+  // Unimos el socket a su sala personal para enviar confirmaciones dirigidas
+  // El controlador puede emitir a `user:<id>` para hablarle solo al firmante/actor
+  if (socket.user?._id) {
+    const userRoom = `user:${socket.user._id}`
+    socket.join(userRoom)
+    console.log(`[Socket.IO] ${socket.user.email} se unió a la room ${userRoom}`)
+  }
+
   socket.on('disconnect', () => {
     console.log(`[Socket.IO] Cliente desconectado: ${socket.id}`)
   })
